@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Counting Critters – Voice Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Fredoka+One&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Nunito', 'Quicksand', 'Comic Sans MS', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background 0.6s ease;
+  }
+  .fredoka { font-family: 'Fredoka One', 'Nunito', sans-serif; }
+
+  @keyframes bounceIn {
+    0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+    50% { transform: scale(1.3) rotate(5deg); }
+    70% { transform: scale(0.9) rotate(-2deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-12px); }
+    40% { transform: translateX(12px); }
+    60% { transform: translateX(-8px); }
+    80% { transform: translateX(8px); }
+  }
+  @keyframes celebFloat {
+    0% { transform: translateY(0) scale(0); opacity: 1; }
+    50% { transform: translateY(-120px) scale(1.3); opacity: 1; }
+    100% { transform: translateY(-220px) scale(0.5); opacity: 0; }
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  @keyframes introFloat {
+    0%, 100% { transform: translateY(0) rotate(-3deg); }
+    50% { transform: translateY(-15px) rotate(3deg); }
+  }
+  @keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes rainbow {
+    0% { color: #FF6B6B; }
+    25% { color: #FECA57; }
+    50% { color: #48DBFB; }
+    75% { color: #FF9FF3; }
+    100% { color: #FF6B6B; }
+  }
+  @keyframes streakPop {
+    0% { transform: scale(0) rotate(-20deg); }
+    60% { transform: scale(1.2) rotate(5deg); }
+    100% { transform: scale(1) rotate(0); }
+  }
+  @keyframes micPulse {
+    0% { box-shadow: 0 0 0 0 rgba(126,87,194,0.4); }
+    50% { box-shadow: 0 0 0 18px rgba(126,87,194,0); }
+    100% { box-shadow: 0 0 0 0 rgba(126,87,194,0); }
+  }
+  @keyframes soundWave {
+    0% { transform: scaleY(0.3); }
+    50% { transform: scaleY(1); }
+    100% { transform: scaleY(0.3); }
+  }
+  @keyframes dotBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes confettiDrift {
+    0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+  @keyframes starSpin {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.3); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
+
+  #app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Screens */
+  .screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+  .screen.active { display: flex; }
+
+  .screen-intro {
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .screen-finished {
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .screen-game {
+    max-width: 480px;
+    padding: 16px;
+    gap: 10px;
+  }
+
+  /* Components */
+  .score-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    animation: slideUp 0.4s ease;
+  }
+  .score-pill {
+    background: rgba(255,255,255,0.8);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .round-pill {
+    background: rgba(255,255,255,0.6);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 13px;
+    color: #9575CD;
+  }
+
+  .arena {
+    width: 100%;
+    aspect-ratio: 1;
+    max-height: 340px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 28px;
+    position: relative;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.06), inset 0 0 60px rgba(255,255,255,0.5);
+    border: 3px solid rgba(255,255,255,0.8);
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .arena.listening { border-color: rgba(126,87,194,0.3); }
+  .arena.shaking { animation: shake 0.5s ease; }
+
+  .animal {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    cursor: default;
+    user-select: none;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.1));
+    opacity: 0;
+  }
+  .animal.visible {
+    opacity: 1;
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.7);
+    border-radius: 28px;
+    animation: bounceIn 0.4s ease;
+  }
+
+  .wrong-hint {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 22px;
+    color: #FF7043;
+    background: rgba(255,255,255,0.9);
+    padding: 8px 24px;
+    border-radius: 20px;
+    animation: bounceIn 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .mic-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 20px;
+    padding: 6px 16px;
+    transition: all 0.3s;
+  }
+  .mic-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    transition: background 0.3s;
+  }
+
+  .sr-dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-top: 2px;
+    opacity: 0.5;
+  }
+  .sr-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    transition: background 0.3s;
+  }
+
+  .btn-start {
+    font-size: clamp(20px, 5vw, 28px);
+    padding: 16px 48px;
+    border-radius: 50px;
+    border: none;
+    background: linear-gradient(135deg, #7E57C2, #AB47BC);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(126,87,194,0.4);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .btn-start:active { transform: scale(0.95); }
+
+  .celeb-emoji {
+    position: fixed;
+    font-size: 40px;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .confetti {
+    position: fixed;
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  .heard-bubble {
+    font-size: 20px;
+    color: #5D4037;
+    background: rgba(255,255,255,0.7);
+    padding: 4px 16px;
+    border-radius: 16px;
+    animation: fadeSlideIn 0.2s ease;
+  }
+
+  .wave-bar {
+    width: 3px;
+    height: 100%;
+    background: #7E57C2;
+    border-radius: 2px;
+    opacity: 0.6;
+  }
+
+  .decor-dot {
+    position: absolute;
+    border-radius: 50%;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- INTRO SCREEN -->
+  <div class="screen screen-intro active" id="screen-intro">
+    <div style="font-size:72px; animation: introFloat 3s ease-in-out infinite; margin-bottom:16px">🎙️</div>
+    <div style="font-size:40px; margin-bottom:8px">🐥🐰🦊</div>
+    <h1 class="fredoka" style="font-size:clamp(32px,7vw,50px); color:#4527A0; margin-bottom:6px; text-shadow: 2px 2px 0 rgba(255,255,255,0.5)">Counting Critters</h1>
+    <p class="fredoka" style="font-size:clamp(16px,4vw,22px); color:#7E57C2; margin-bottom:4px; letter-spacing:1px">Voice Edition</p>
+    <p style="font-size:clamp(14px,3.5vw,18px); color:#9575CD; margin-bottom:28px; font-weight:700; max-width:320px; line-height:1.4">
+      Count the animals and say the number out loud!<br>
+      <span style="font-size:clamp(12px,3vw,15px); opacity:0.8" id="round-label">15 rounds per game</span>
+    </p>
+    <button class="btn-start fredoka" onclick="startGame()">Start! 🎤</button>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div class="screen screen-game" id="screen-game">
+    <div class="score-bar">
+      <div class="score-pill fredoka" style="color:#7E57C2" id="score-display">⭐ 0</div>
+      <div class="round-pill fredoka" id="round-display">1 / 15</div>
+      <div class="score-pill fredoka" style="color:#FF9800" id="streak-display">🔥 0</div>
+    </div>
+    <div class="fredoka" style="font-size:clamp(20px,5vw,26px); color:#5D4037; text-align:center" id="prompt">How many kittens?</div>
+    <div class="arena" id="arena"></div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:6px; width:100%">
+      <div style="min-height:32px; display:flex; align-items:center; justify-content:center" id="heard-area"></div>
+      <div class="mic-indicator" id="mic-indicator">
+        <div class="mic-dot" id="mic-dot" style="background:#BDBDBD"></div>
+        <span class="fredoka" style="font-size:13px; color:#BDBDBD" id="mic-label">Mic off</span>
+        <div id="mic-waves" style="display:none; gap:2px; align-items:center; height:14px"></div>
+      </div>
+    </div>
+    <div class="sr-dots" id="sr-dots"></div>
+  </div>
+
+  <!-- FINISHED SCREEN -->
+  <div class="screen screen-finished" id="screen-finished">
+    <div id="confetti-container"></div>
+    <div style="font-size:80px; animation: starSpin 3s ease-in-out infinite; margin-bottom:12px">🏆</div>
+    <h1 class="fredoka" style="font-size:clamp(28px,7vw,44px); color:#4527A0; margin-bottom:12px; animation: rainbow 2s linear infinite">Great Game!</h1>
+    <div style="background:rgba(255,255,255,0.8); border-radius:24px; padding:20px 32px; box-shadow:0 8px 32px rgba(0,0,0,0.08); margin-bottom:24px; animation: slideUp 0.5s ease 0.3s both">
+      <div class="fredoka" style="font-size:20px; color:#5D4037; margin-bottom:8px" id="final-score">⭐ 0 points</div>
+      <div style="font-size:16px; color:#8D6E63; font-weight:700" id="final-stats">0 of 15 correct · Best streak: 0 🔥</div>
+    </div>
+    <button class="btn-start fredoka" onclick="startGame()">Play Again! 🎤</button>
+  </div>
+
+  <div id="celeb-container"></div>
+</div>
+
+<script src="counting-critters-core.js"></script>
+<script>
+const {
+  TOTAL_ROUNDS,
+  WORD_TO_NUM,
+  normalizeTranscript,
+  parseSpoken,
+  getBestTranscript,
+  getParsedNumberFromResult,
+  createSR,
+  pickNext: pickNextNumber,
+  summarizeSpeechEvent,
+  getSpeechAnswer,
+} = window.CountingCrittersCore;
+
+const ANIMALS = [
+  { emoji: "🐥", name: "chicks", bg: "#FFF8E1" },
+  { emoji: "🐰", name: "bunnies", bg: "#FCE4EC" },
+  { emoji: "🐱", name: "kittens", bg: "#E8EAF6" },
+  { emoji: "🦊", name: "foxes", bg: "#FFF3E0" },
+  { emoji: "🐸", name: "frogs", bg: "#E8F5E9" },
+  { emoji: "🦋", name: "butterflies", bg: "#F3E5F5" },
+  { emoji: "🐢", name: "turtles", bg: "#E0F2F1" },
+  { emoji: "🐻", name: "bears", bg: "#EFEBE9" },
+  { emoji: "🦉", name: "owls", bg: "#FBE9E7" },
+  { emoji: "🐧", name: "penguins", bg: "#E1F5FE" },
+  { emoji: "🐝", name: "bees", bg: "#FFFDE7" },
+  { emoji: "🐙", name: "octopi", bg: "#EDE7F6" },
+];
+
+const CELEBRATIONS = ["🎉","⭐","🌟","🎊","💫","✨","🥳","🏆"];
+const ENCOURAGEMENTS = ["Amazing!","Wow!","You did it!","Super!","Yay!","Great job!","Fantastic!","So smart!"];
+const GENTLE_HINTS = ["Try again!","Almost!","Count once more!","You got this!"];
+
+const LAYOUTS = {
+  1: [{x:50,y:50}],
+  2: [{x:32,y:50},{x:68,y:50}],
+  3: [{x:50,y:30},{x:30,y:65},{x:70,y:65}],
+  4: [{x:30,y:30},{x:70,y:30},{x:30,y:70},{x:70,y:70}],
+  5: [{x:50,y:25},{x:25,y:50},{x:75,y:50},{x:30,y:75},{x:70,y:75}],
+  6: [{x:30,y:25},{x:70,y:25},{x:20,y:55},{x:50,y:55},{x:80,y:55},{x:50,y:82}],
+  7: [{x:50,y:15},{x:25,y:38},{x:75,y:38},{x:15,y:62},{x:50,y:62},{x:85,y:62},{x:50,y:85}],
+  8: [{x:25,y:20},{x:55,y:15},{x:80,y:25},{x:15,y:50},{x:50,y:45},{x:85,y:50},{x:30,y:78},{x:68,y:78}],
+  9: [{x:25,y:20},{x:50,y:15},{x:75,y:20},{x:20,y:50},{x:50,y:50},{x:80,y:50},{x:25,y:80},{x:50,y:80},{x:75,y:80}],
+};
+
+function randItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// ── State ──
+let srSystem = {};
+let round = 0, currentNum = 1, animal = ANIMALS[0];
+let phase = "intro"; // intro, playing, correct, wrong, streak, finished
+let score = 0, streak = 0, bestStreak = 0, correctCount = 0;
+let processing = false, shouldListen = false;
+let recognition = null;
+
+function pickNext() {
+  return pickNextNumber(srSystem, round, randItem);
+}
+
+// ── DOM helpers ──
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function setBg(bg) {
+  document.body.style.background = bg;
+}
+
+function updateScoreBar() {
+  document.getElementById('score-display').textContent = `⭐ ${score}`;
+  document.getElementById('round-display').textContent = `${round + 1} / ${TOTAL_ROUNDS}`;
+  let streakHTML = `🔥 ${streak}`;
+  if (bestStreak > 0) streakHTML += ` <span style="font-size:11px;opacity:0.6">best: ${bestStreak}</span>`;
+  document.getElementById('streak-display').innerHTML = streakHTML;
+}
+
+function updateSRDots() {
+  const container = document.getElementById('sr-dots');
+  container.innerHTML = '';
+  for (let i = 1; i <= 9; i++) {
+    const d = document.createElement('div');
+    d.className = 'sr-dot';
+    const box = srSystem[i].box;
+    d.style.background = box >= 4 ? '#4CAF50' : box >= 2 ? '#FFC107' : '#EF5350';
+    container.appendChild(d);
+  }
+}
+
+function updateMicUI(on) {
+  const dot = document.getElementById('mic-dot');
+  const label = document.getElementById('mic-label');
+  const indicator = document.getElementById('mic-indicator');
+  const waves = document.getElementById('mic-waves');
+  if (on) {
+    dot.style.background = '#7E57C2';
+    dot.style.animation = 'micPulse 1.5s ease infinite';
+    label.style.color = '#7E57C2';
+    label.textContent = 'Mic on';
+    indicator.style.background = 'rgba(126,87,194,0.1)';
+    waves.style.display = 'flex';
+    waves.innerHTML = [0,1,2].map(i =>
+      `<div class="wave-bar" style="animation: soundWave 0.6s ease ${i*0.12}s infinite"></div>`
+    ).join('');
+  } else {
+    dot.style.background = '#BDBDBD';
+    dot.style.animation = 'none';
+    label.style.color = '#BDBDBD';
+    label.textContent = 'Mic off';
+    indicator.style.background = 'rgba(0,0,0,0.04)';
+    waves.style.display = 'none';
+    waves.innerHTML = '';
+  }
+}
+
+function setHeard(text) {
+  const area = document.getElementById('heard-area');
+  if (!text) {
+    if (phase === 'playing') {
+      area.innerHTML = `
+        <div style="display:flex;gap:4px;align-items:center">
+          ${[0,1,2].map(i => `<div style="width:6px;height:6px;border-radius:50%;background:#7E57C2;animation:dotBounce 0.8s ease ${i*0.15}s infinite"></div>`).join('')}
+          <span class="fredoka" style="font-size:15px;color:#9575CD;margin-left:6px">Say the number!</span>
+        </div>`;
+    } else {
+      area.innerHTML = '';
+    }
+  } else {
+    area.innerHTML = `<div class="heard-bubble fredoka">🗣️ "${text}"</div>`;
+  }
+}
+
+function renderArena() {
+  const arena = document.getElementById('arena');
+  arena.className = 'arena' + (shouldListen ? ' listening' : '');
+  arena.innerHTML = '';
+
+  // Decorative dots
+  for (let i = 0; i < 12; i++) {
+    const d = document.createElement('div');
+    d.className = 'decor-dot';
+    d.style.width = (6 + Math.random() * 8) + 'px';
+    d.style.height = d.style.width;
+    d.style.background = `hsla(${Math.random()*360}, 60%, 80%, 0.3)`;
+    d.style.left = (10 + Math.random() * 80) + '%';
+    d.style.top = (10 + Math.random() * 80) + '%';
+    arena.appendChild(d);
+  }
+
+  // Animals
+  const layout = LAYOUTS[currentNum] || LAYOUTS[1];
+  const fontSize = currentNum <= 4 ? 'clamp(42px,10vw,56px)' : currentNum <= 6 ? 'clamp(36px,8vw,48px)' : 'clamp(30px,7vw,40px)';
+  layout.forEach((pos, i) => {
+    const el = document.createElement('div');
+    el.className = 'animal';
+    el.textContent = animal.emoji;
+    el.style.left = pos.x + '%';
+    el.style.top = pos.y + '%';
+    el.style.fontSize = fontSize;
+    arena.appendChild(el);
+    // Staggered bounce in
+    setTimeout(() => {
+      el.classList.add('visible');
+      el.style.animation = `bounceIn 0.5s ease ${i*0.08}s both, float 3s ease-in-out ${i*0.4}s infinite`;
+    }, 100);
+  });
+}
+
+function showCorrectOverlay(isStreak) {
+  const arena = document.getElementById('arena');
+  const ov = document.createElement('div');
+  ov.className = 'overlay';
+  const msg = isStreak ? `🔥 ${streak} in a row! 🔥` : randItem(ENCOURAGEMENTS);
+  const msgStyle = isStreak
+    ? 'animation: rainbow 1s linear infinite, streakPop 0.5s ease'
+    : 'animation: streakPop 0.4s ease';
+  ov.innerHTML = `
+    <div class="fredoka" style="font-size:${isStreak ? 34 : 30}px; color:#4CAF50; ${msgStyle}">${msg}</div>
+    <div style="font-size:48px; margin-top:8px">${isStreak ? '🏆' : '✅'}</div>
+  `;
+  arena.appendChild(ov);
+}
+
+function showWrongOverlay() {
+  const arena = document.getElementById('arena');
+  arena.classList.add('shaking');
+  const hint = document.createElement('div');
+  hint.className = 'wrong-hint fredoka';
+  hint.textContent = randItem(GENTLE_HINTS);
+  arena.appendChild(hint);
+  setTimeout(() => arena.classList.remove('shaking'), 500);
+}
+
+function spawnCelebs() {
+  const container = document.getElementById('celeb-container');
+  container.innerHTML = '';
+  for (let i = 0; i < 8; i++) {
+    const el = document.createElement('div');
+    el.className = 'celeb-emoji';
+    el.textContent = randItem(CELEBRATIONS);
+    el.style.left = (10 + Math.random() * 80) + '%';
+    el.style.bottom = '30%';
+    el.style.animation = `celebFloat 1.5s ease-out ${Math.random()*0.3}s forwards`;
+    container.appendChild(el);
+  }
+  setTimeout(() => container.innerHTML = '', 1800);
+}
+
+function showFinished() {
+  phase = 'finished';
+  stopMic();
+  document.getElementById('final-score').textContent = `⭐ ${score} points`;
+  document.getElementById('final-stats').textContent = `${correctCount} of ${TOTAL_ROUNDS} correct · Best streak: ${bestStreak} 🔥`;
+
+  // Confetti
+  const cc = document.getElementById('confetti-container');
+  cc.innerHTML = '';
+  const confEmojis = ["🎉","⭐","🌟","🎊","💫","✨","🥳","🏆","🎈","🌈"];
+  for (let i = 0; i < 20; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.textContent = confEmojis[i % 10];
+    el.style.left = (5 + Math.random() * 90) + '%';
+    el.style.top = '-20px';
+    el.style.fontSize = (16 + Math.random() * 20) + 'px';
+    el.style.animation = `confettiDrift ${3+Math.random()*3}s ease-in ${Math.random()*2}s forwards`;
+    cc.appendChild(el);
+  }
+
+  setBg('linear-gradient(135deg, #E8EAF6 0%, #C5CAE9 30%, #E1BEE7 70%, #F3E5F5 100%)');
+  show('screen-finished');
+}
+
+// ── Game flow ──
+function goToNextRound() {
+  if (round >= TOTAL_ROUNDS) {
+    showFinished();
+    return;
+  }
+  currentNum = pickNext();
+  animal = randItem(ANIMALS);
+  phase = 'playing';
+  processing = false;
+  setBg(`linear-gradient(135deg, ${animal.bg} 0%, #FFFFFF 50%, ${animal.bg} 100%)`);
+  document.getElementById('prompt').textContent = `How many ${animal.name}?`;
+  updateScoreBar();
+  updateSRDots();
+  renderArena();
+  setHeard('');
+}
+
+function handleAnswer(answer) {
+  if (processing) return;
+  processing = true;
+
+  if (answer === currentNum) {
+    streak++;
+    if (streak > bestStreak) bestStreak = streak;
+    score += currentNum * 10;
+    correctCount++;
+    srSystem[currentNum].box = Math.min(srSystem[currentNum].box + 1, 5);
+    srSystem[currentNum].lastSeen = round;
+    round++;
+
+    const isStreak = streak > 0 && streak % 5 === 0;
+    phase = isStreak ? 'streak' : 'correct';
+    showCorrectOverlay(isStreak);
+    spawnCelebs();
+    updateScoreBar();
+    updateSRDots();
+
+    setTimeout(() => {
+      processing = false;
+      goToNextRound();
+    }, 1800);
+  } else {
+    streak = 0;
+    srSystem[currentNum].box = Math.max(srSystem[currentNum].box - 1, 0);
+    srSystem[currentNum].errors++;
+    srSystem[currentNum].lastSeen = round;
+    phase = 'wrong';
+    showWrongOverlay();
+    updateScoreBar();
+    updateSRDots();
+
+    setTimeout(() => {
+      phase = 'playing';
+      processing = false;
+      renderArena();
+      setHeard('');
+    }, 1500);
+  }
+}
+
+// ── Speech Recognition ──
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+function startMic() {
+  if (!SpeechRecognition) {
+    alert('Speech recognition is not supported in this browser. Please use Chrome or Safari.');
+    return;
+  }
+  shouldListen = true;
+
+  function boot() {
+    if (!shouldListen) return;
+    try {
+      if (recognition) { try { recognition.abort(); } catch(e){} }
+
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      recognition.maxAlternatives = 5;
+
+      recognition.onstart = () => updateMicUI(true);
+
+      recognition.onresult = (event) => {
+        const summary = summarizeSpeechEvent(event);
+        if (summary.display) setHeard(summary.display);
+
+        const answer = getSpeechAnswer(summary, currentNum, processing, phase);
+        if (answer !== null) {
+          handleAnswer(answer);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        // no-speech and audio-capture are benign, will restart via onend
+        if (event.error === 'not-allowed') {
+          alert('Microphone access was denied. Please allow microphone access and try again.');
+          shouldListen = false;
+          updateMicUI(false);
+        }
+      };
+
+      recognition.onend = () => {
+        updateMicUI(false);
+        if (shouldListen) {
+          setTimeout(boot, 300);
+        }
+      };
+
+      recognition.start();
+    } catch(e) {
+      if (shouldListen) setTimeout(boot, 500);
+    }
+  }
+
+  boot();
+}
+
+function stopMic() {
+  shouldListen = false;
+  if (recognition) {
+    try { recognition.abort(); } catch(e) {}
+    recognition = null;
+  }
+  updateMicUI(false);
+}
+
+function startGame() {
+  srSystem = createSR();
+  round = 0;
+  score = 0;
+  streak = 0;
+  bestStreak = 0;
+  correctCount = 0;
+  processing = false;
+  document.getElementById('celeb-container').innerHTML = '';
+
+  currentNum = pickNext();
+  animal = randItem(ANIMALS);
+  phase = 'playing';
+
+  show('screen-game');
+  setBg(`linear-gradient(135deg, ${animal.bg} 0%, #FFFFFF 50%, ${animal.bg} 100%)`);
+  document.getElementById('prompt').textContent = `How many ${animal.name}?`;
+  updateScoreBar();
+  updateSRDots();
+  renderArena();
+  setHeard('');
+
+  startMic();
+}
+
+// Init
+setBg('linear-gradient(135deg, #E8EAF6 0%, #C5CAE9 30%, #E1BEE7 70%, #F3E5F5 100%)');
+</script>
+</body>
+</html>

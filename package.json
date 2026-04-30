@@ -1,0 +1,12 @@
+{
+  "name": "counting-game",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "coverage": "c8 --100 --include counting-critters-core.js node --test"
+  },
+  "devDependencies": {
+    "c8": "^10.1.3"
+  }
+}
