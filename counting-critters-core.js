@@ -79,14 +79,14 @@
     return randItem(top).num;
   }
 
-  function summarizeSpeechEvent(event) {
+  function summarizeSpeechResults(results, startIndex) {
     let finalTranscript = '';
     let interimTranscript = '';
     let parsedFinal = null;
     let parsedInterim = null;
 
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const result = event.results[i];
+    for (let i = startIndex; i < results.length; i++) {
+      const result = results[i];
       if (result.isFinal) {
         finalTranscript += `${getBestTranscript(result)} `;
         if (parsedFinal === null) {
@@ -100,12 +100,20 @@
       }
     }
 
+    return { finalTranscript, interimTranscript, parsedFinal, parsedInterim };
+  }
+
+  function summarizeSpeechEvent(event) {
+    const changed = summarizeSpeechResults(event.results, event.resultIndex);
+    const hasChangedAnswer = changed.parsedFinal !== null || changed.parsedInterim !== null;
+    const summary = hasChangedAnswer ? changed : summarizeSpeechResults(event.results, 0);
+
     return {
-      display: (finalTranscript || interimTranscript).trim(),
-      finalTranscript,
-      interimTranscript,
-      parsedFinal,
-      parsedInterim,
+      display: (summary.finalTranscript || summary.interimTranscript).trim(),
+      finalTranscript: summary.finalTranscript,
+      interimTranscript: summary.interimTranscript,
+      parsedFinal: summary.parsedFinal,
+      parsedInterim: summary.parsedInterim,
     };
   }
 
@@ -123,6 +131,7 @@
     parseSpoken,
     getBestTranscript,
     getParsedNumberFromResult,
+    summarizeSpeechResults,
     createSR,
     getCandidateScores,
     pickNext,

@@ -35,6 +35,11 @@ test('parseSpoken reads exact number words and close recognizer variants', () =>
   assert.equal(core.parseSpoken('please count fore'), 4);
 });
 
+test('parseSpoken reads repeated number words and digits', () => {
+  assert.equal(core.parseSpoken('two two'), 2);
+  assert.equal(core.parseSpoken('2 2'), 2);
+});
+
 test('parseSpoken reads embedded longer word matches', () => {
   assert.equal(core.parseSpoken('there are xxsevenxx'), 7);
 });
@@ -109,6 +114,22 @@ test('summarizeSpeechEvent displays interim speech when no final result exists',
   assert.equal(summary.display, 'two');
   assert.equal(summary.finalTranscript, '');
   assert.equal(summary.interimTranscript, 'two');
+  assert.equal(summary.parsedFinal, null);
+  assert.equal(summary.parsedInterim, 2);
+});
+
+test('summarizeSpeechEvent falls back to earlier recognition results when changed results do not parse', () => {
+  const summary = core.summarizeSpeechEvent({
+    resultIndex: 1,
+    results: [
+      speechResult(false, [' two two ']),
+      speechResult(false, ['']),
+    ],
+  });
+
+  assert.equal(summary.display, 'two two');
+  assert.equal(summary.finalTranscript, '');
+  assert.equal(summary.interimTranscript, 'two two');
   assert.equal(summary.parsedFinal, null);
   assert.equal(summary.parsedInterim, 2);
 });

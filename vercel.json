@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/counting-critters-voice.html"
+    }
+  ]
+}
