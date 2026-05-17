@@ -335,6 +335,7 @@ const {
   WORD_TO_NUM,
   normalizeTranscript,
   parseSpoken,
+  getCountingSequenceAnswer,
   getBestTranscript,
   getParsedNumberFromResult,
   createSR,
@@ -383,6 +384,8 @@ let phase = "intro"; // intro, playing, correct, wrong, streak, finished
 let score = 0, streak = 0, bestStreak = 0, correctCount = 0;
 let processing = false, shouldListen = false;
 let recognition = null;
+let pendingCountingTimer = null;
+let pendingCountingAnswer = null;
 
 function pickNext() {
   return pickNextNumber(srSystem, round, randItem);
@@ -469,6 +472,28 @@ function countTranscriptWords(text) {
 function restartSpeechRecognition() {
   if (!shouldListen || !recognition) return;
   try { recognition.abort(); } catch(e) {}
+}
+
+function clearPendingCountingAnswer() {
+  if (pendingCountingTimer) {
+    clearTimeout(pendingCountingTimer);
+    pendingCountingTimer = null;
+  }
+  pendingCountingAnswer = null;
+}
+
+function queueCountingAnswer(answer) {
+  if (processing || phase !== 'playing') return;
+  pendingCountingAnswer = answer;
+  if (pendingCountingTimer) clearTimeout(pendingCountingTimer);
+  pendingCountingTimer = setTimeout(() => {
+    const answerToSubmit = pendingCountingAnswer;
+    clearPendingCountingAnswer();
+    if (answerToSubmit !== null && phase === 'playing' && !processing) {
+      handleAnswer(answerToSubmit);
+      restartSpeechRecognition();
+    }
+  }, 900);
 }
 
 function renderArena() {
@@ -574,6 +599,7 @@ function showFinished() {
 
 // ── Game flow ──
 function goToNextRound() {
+  clearPendingCountingAnswer();
   if (round >= TOTAL_ROUNDS) {
     showFinished();
     return;
@@ -592,6 +618,7 @@ function goToNextRound() {
 
 function handleAnswer(answer) {
   if (processing) return;
+  clearPendingCountingAnswer();
   processing = true;
 
   if (answer === currentNum) {
@@ -667,6 +694,12 @@ function startMic() {
           return;
         }
 
+        const countingAnswer = getCountingSequenceAnswer(summary);
+        if (countingAnswer !== null) {
+          queueCountingAnswer(countingAnswer);
+          return;
+        }
+
         if (phase === 'playing' && countTranscriptWords(summary.display) > 8) {
           setHeard('');
           restartSpeechRecognition();
@@ -700,6 +733,7 @@ function startMic() {
 
 function stopMic() {
   shouldListen = false;
+  clearPendingCountingAnswer();
   if (recognition) {
     try { recognition.abort(); } catch(e) {}
     recognition = null;

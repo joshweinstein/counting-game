@@ -48,6 +48,29 @@
     return null;
   }
 
+  function getSpokenNumbers(transcript) {
+    const cleaned = normalizeTranscript(transcript);
+    if (!cleaned) return [];
+
+    const numbers = [];
+    const tokens = cleaned.split(/\s+/);
+    for (const token of tokens) {
+      const digits = token.match(/\d/g);
+      if (digits) {
+        for (const digit of digits) {
+          const n = parseInt(digit, 10);
+          if (n >= 1 && n <= 9) numbers.push(n);
+        }
+        continue;
+      }
+
+      const parsed = parseSpoken(token);
+      if (parsed !== null) numbers.push(parsed);
+    }
+
+    return numbers;
+  }
+
   function getBestTranscript(result) {
     return (result && result[0] && result[0].transcript ? result[0].transcript : '').trim();
   }
@@ -58,6 +81,14 @@
       if (parsed !== null) return parsed;
     }
     return null;
+  }
+
+  function getSpokenNumbersFromResult(result) {
+    for (let i = 0; i < result.length; i++) {
+      const numbers = getSpokenNumbers(result[i].transcript);
+      if (numbers.length > 0) return numbers;
+    }
+    return [];
   }
 
   function createSR() {
@@ -84,6 +115,8 @@
     let interimTranscript = '';
     let parsedFinal = null;
     let parsedInterim = null;
+    let finalNumbers = [];
+    let interimNumbers = [];
 
     for (let i = startIndex; i < results.length; i++) {
       const result = results[i];
@@ -92,15 +125,21 @@
         if (parsedFinal === null) {
           parsedFinal = getParsedNumberFromResult(result);
         }
+        if (finalNumbers.length === 0) {
+          finalNumbers = getSpokenNumbersFromResult(result);
+        }
       } else {
         interimTranscript += getBestTranscript(result);
         if (parsedInterim === null) {
           parsedInterim = getParsedNumberFromResult(result);
         }
+        if (interimNumbers.length === 0) {
+          interimNumbers = getSpokenNumbersFromResult(result);
+        }
       }
     }
 
-    return { finalTranscript, interimTranscript, parsedFinal, parsedInterim };
+    return { finalTranscript, interimTranscript, parsedFinal, parsedInterim, finalNumbers, interimNumbers };
   }
 
   function summarizeSpeechEvent(event) {
@@ -114,14 +153,26 @@
       interimTranscript: changed.interimTranscript,
       parsedFinal: changed.parsedFinal,
       parsedInterim: changed.parsedInterim,
+      finalNumbers: changed.finalNumbers,
+      interimNumbers: changed.interimNumbers,
     };
   }
 
   function getSpeechAnswer(summary, currentNum, processing, phase) {
     if (processing || phase !== 'playing') return null;
+    if (summary.finalNumbers && summary.finalNumbers.length > 1) return null;
+    if (summary.interimNumbers && summary.interimNumbers.length > 1) return null;
     if (summary.finalTranscript && summary.parsedFinal !== null) return summary.parsedFinal;
     if (!summary.finalTranscript && summary.parsedInterim === currentNum) return summary.parsedInterim;
     return null;
+  }
+
+  function getCountingSequenceAnswer(summary) {
+    const numbers = summary.finalNumbers && summary.finalNumbers.length > 1
+      ? summary.finalNumbers
+      : summary.interimNumbers;
+    if (!numbers || numbers.length < 2) return null;
+    return numbers[numbers.length - 1];
   }
 
   return {
@@ -129,13 +180,16 @@
     WORD_TO_NUM,
     normalizeTranscript,
     parseSpoken,
+    getSpokenNumbers,
     getBestTranscript,
     getParsedNumberFromResult,
+    getSpokenNumbersFromResult,
     summarizeSpeechResults,
     createSR,
     getCandidateScores,
     pickNext,
     summarizeSpeechEvent,
     getSpeechAnswer,
+    getCountingSequenceAnswer,
   };
 });

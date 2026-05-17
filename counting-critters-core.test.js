@@ -40,6 +40,12 @@ test('parseSpoken reads repeated number words and digits', () => {
   assert.equal(core.parseSpoken('2 2'), 2);
 });
 
+test('getSpokenNumbers returns ordered spoken numbers', () => {
+  assert.deepEqual(core.getSpokenNumbers('one two three four'), [1, 2, 3, 4]);
+  assert.deepEqual(core.getSpokenNumbers('1 2 3 4'), [1, 2, 3, 4]);
+  assert.deepEqual(core.getSpokenNumbers('count the bunnies'), []);
+});
+
 test('parseSpoken reads embedded longer word matches', () => {
   assert.equal(core.parseSpoken('there are xxsevenxx'), 7);
 });
@@ -53,6 +59,11 @@ test('getBestTranscript trims the preferred alternative and handles missing data
 test('getParsedNumberFromResult returns the first parsed alternative', () => {
   assert.equal(core.getParsedNumberFromResult([{ transcript: 'nope' }, { transcript: 'three' }]), 3);
   assert.equal(core.getParsedNumberFromResult([{ transcript: 'nope' }]), null);
+});
+
+test('getSpokenNumbersFromResult returns the first numeric alternative sequence', () => {
+  assert.deepEqual(core.getSpokenNumbersFromResult([{ transcript: 'nope' }, { transcript: 'one two three' }]), [1, 2, 3]);
+  assert.deepEqual(core.getSpokenNumbersFromResult([{ transcript: 'nope' }]), []);
 });
 
 test('createSR creates the spaced-repetition state for numbers one through nine', () => {
@@ -100,6 +111,8 @@ test('summarizeSpeechEvent displays final speech and parses final alternatives',
   assert.equal(summary.interimTranscript, 'two');
   assert.equal(summary.parsedFinal, 4);
   assert.equal(summary.parsedInterim, 2);
+  assert.deepEqual(summary.finalNumbers, [4]);
+  assert.deepEqual(summary.interimNumbers, [2]);
 });
 
 test('summarizeSpeechEvent displays interim speech when no final result exists', () => {
@@ -116,6 +129,8 @@ test('summarizeSpeechEvent displays interim speech when no final result exists',
   assert.equal(summary.interimTranscript, 'two');
   assert.equal(summary.parsedFinal, null);
   assert.equal(summary.parsedInterim, 2);
+  assert.deepEqual(summary.finalNumbers, []);
+  assert.deepEqual(summary.interimNumbers, [2]);
 });
 
 test('summarizeSpeechEvent uses stale earlier recognition results for display only', () => {
@@ -132,6 +147,8 @@ test('summarizeSpeechEvent uses stale earlier recognition results for display on
   assert.equal(summary.interimTranscript, '');
   assert.equal(summary.parsedFinal, null);
   assert.equal(summary.parsedInterim, null);
+  assert.deepEqual(summary.finalNumbers, []);
+  assert.deepEqual(summary.interimNumbers, []);
 });
 
 test('summarizeSpeechEvent ignores stale final words when a fresh interim answer is heard', () => {
@@ -148,6 +165,23 @@ test('summarizeSpeechEvent ignores stale final words when a fresh interim answer
   assert.equal(summary.interimTranscript, 'three');
   assert.equal(summary.parsedFinal, null);
   assert.equal(summary.parsedInterim, 3);
+  assert.deepEqual(summary.finalNumbers, []);
+  assert.deepEqual(summary.interimNumbers, [3]);
+});
+
+test('summarizeSpeechEvent captures counting sequences without treating the first number as an answer', () => {
+  const summary = core.summarizeSpeechEvent({
+    resultIndex: 0,
+    results: [
+      speechResult(false, ['one two three four']),
+    ],
+  });
+
+  assert.equal(summary.display, 'one two three four');
+  assert.equal(summary.parsedInterim, 1);
+  assert.deepEqual(summary.interimNumbers, [1, 2, 3, 4]);
+  assert.equal(core.getSpeechAnswer(summary, 4, false, 'playing'), null);
+  assert.equal(core.getCountingSequenceAnswer(summary), 4);
 });
 
 test('getSpeechAnswer returns final answers even when wrong', () => {
