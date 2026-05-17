@@ -106,14 +106,14 @@
   function summarizeSpeechEvent(event) {
     const changed = summarizeSpeechResults(event.results, event.resultIndex);
     const hasChangedAnswer = changed.parsedFinal !== null || changed.parsedInterim !== null;
-    const summary = hasChangedAnswer ? changed : summarizeSpeechResults(event.results, 0);
+    const displaySummary = hasChangedAnswer ? changed : summarizeSpeechResults(event.results, 0);
 
     return {
-      display: (summary.finalTranscript || summary.interimTranscript).trim(),
-      finalTranscript: summary.finalTranscript,
-      interimTranscript: summary.interimTranscript,
-      parsedFinal: summary.parsedFinal,
-      parsedInterim: summary.parsedInterim,
+      display: (displaySummary.finalTranscript || displaySummary.interimTranscript).trim(),
+      finalTranscript: changed.finalTranscript,
+      interimTranscript: changed.interimTranscript,
+      parsedFinal: changed.parsedFinal,
+      parsedInterim: changed.parsedInterim,
     };
   }
 

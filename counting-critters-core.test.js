@@ -118,7 +118,7 @@ test('summarizeSpeechEvent displays interim speech when no final result exists',
   assert.equal(summary.parsedInterim, 2);
 });
 
-test('summarizeSpeechEvent falls back to earlier recognition results when changed results do not parse', () => {
+test('summarizeSpeechEvent uses stale earlier recognition results for display only', () => {
   const summary = core.summarizeSpeechEvent({
     resultIndex: 1,
     results: [
@@ -129,9 +129,25 @@ test('summarizeSpeechEvent falls back to earlier recognition results when change
 
   assert.equal(summary.display, 'two two');
   assert.equal(summary.finalTranscript, '');
-  assert.equal(summary.interimTranscript, 'two two');
+  assert.equal(summary.interimTranscript, '');
   assert.equal(summary.parsedFinal, null);
-  assert.equal(summary.parsedInterim, 2);
+  assert.equal(summary.parsedInterim, null);
+});
+
+test('summarizeSpeechEvent ignores stale final words when a fresh interim answer is heard', () => {
+  const summary = core.summarizeSpeechEvent({
+    resultIndex: 1,
+    results: [
+      speechResult(true, ['random words']),
+      speechResult(false, ['three']),
+    ],
+  });
+
+  assert.equal(summary.display, 'three');
+  assert.equal(summary.finalTranscript, '');
+  assert.equal(summary.interimTranscript, 'three');
+  assert.equal(summary.parsedFinal, null);
+  assert.equal(summary.parsedInterim, 3);
 });
 
 test('getSpeechAnswer returns final answers even when wrong', () => {

@@ -461,6 +461,16 @@ function setHeard(text) {
   }
 }
 
+function countTranscriptWords(text) {
+  const cleaned = normalizeTranscript(text);
+  return cleaned ? cleaned.split(/\s+/).length : 0;
+}
+
+function restartSpeechRecognition() {
+  if (!shouldListen || !recognition) return;
+  try { recognition.abort(); } catch(e) {}
+}
+
 function renderArena() {
   const arena = document.getElementById('arena');
   arena.className = 'arena' + (shouldListen ? ' listening' : '');
@@ -653,6 +663,13 @@ function startMic() {
         const answer = getSpeechAnswer(summary, currentNum, processing, phase);
         if (answer !== null) {
           handleAnswer(answer);
+          restartSpeechRecognition();
+          return;
+        }
+
+        if (phase === 'playing' && countTranscriptWords(summary.display) > 8) {
+          setHeard('');
+          restartSpeechRecognition();
         }
       };
 
