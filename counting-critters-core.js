@@ -144,11 +144,9 @@
 
   function summarizeSpeechEvent(event) {
     const changed = summarizeSpeechResults(event.results, event.resultIndex);
-    const hasChangedAnswer = changed.parsedFinal !== null || changed.parsedInterim !== null;
-    const displaySummary = hasChangedAnswer ? changed : summarizeSpeechResults(event.results, 0);
 
     return {
-      display: (displaySummary.finalTranscript || displaySummary.interimTranscript).trim(),
+      display: (changed.finalTranscript || changed.interimTranscript).trim(),
       finalTranscript: changed.finalTranscript,
       interimTranscript: changed.interimTranscript,
       parsedFinal: changed.parsedFinal,

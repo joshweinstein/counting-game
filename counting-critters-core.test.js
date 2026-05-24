@@ -133,7 +133,7 @@ test('summarizeSpeechEvent displays interim speech when no final result exists',
   assert.deepEqual(summary.interimNumbers, [2]);
 });
 
-test('summarizeSpeechEvent uses stale earlier recognition results for display only', () => {
+test('summarizeSpeechEvent ignores stale earlier recognition results for display and answers', () => {
   const summary = core.summarizeSpeechEvent({
     resultIndex: 1,
     results: [
@@ -142,7 +142,7 @@ test('summarizeSpeechEvent uses stale earlier recognition results for display on
     ],
   });
 
-  assert.equal(summary.display, 'two two');
+  assert.equal(summary.display, '');
   assert.equal(summary.finalTranscript, '');
   assert.equal(summary.interimTranscript, '');
   assert.equal(summary.parsedFinal, null);

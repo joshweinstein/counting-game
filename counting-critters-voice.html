@@ -386,6 +386,7 @@ let processing = false, shouldListen = false;
 let recognition = null;
 let pendingCountingTimer = null;
 let pendingCountingAnswer = null;
+let transcriptWatchdogTimer = null;
 
 function pickNext() {
   return pickNextNumber(srSystem, round, randItem);
@@ -472,6 +473,25 @@ function countTranscriptWords(text) {
 function restartSpeechRecognition() {
   if (!shouldListen || !recognition) return;
   try { recognition.abort(); } catch(e) {}
+}
+
+function clearTranscriptWatchdog() {
+  if (transcriptWatchdogTimer) {
+    clearTimeout(transcriptWatchdogTimer);
+    transcriptWatchdogTimer = null;
+  }
+}
+
+function scheduleTranscriptWatchdog(text) {
+  clearTranscriptWatchdog();
+  if (!text || phase !== 'playing') return;
+  transcriptWatchdogTimer = setTimeout(() => {
+    if (phase === 'playing' && !processing) {
+      setHeard('');
+      clearPendingCountingAnswer();
+      restartSpeechRecognition();
+    }
+  }, 2500);
 }
 
 function clearPendingCountingAnswer() {
@@ -600,6 +620,7 @@ function showFinished() {
 // ── Game flow ──
 function goToNextRound() {
   clearPendingCountingAnswer();
+  clearTranscriptWatchdog();
   if (round >= TOTAL_ROUNDS) {
     showFinished();
     return;
@@ -619,6 +640,7 @@ function goToNextRound() {
 function handleAnswer(answer) {
   if (processing) return;
   clearPendingCountingAnswer();
+  clearTranscriptWatchdog();
   processing = true;
 
   if (answer === currentNum) {
@@ -684,7 +706,8 @@ function startMic() {
 
       recognition.onresult = (event) => {
         const summary = summarizeSpeechEvent(event);
-        if (summary.display) setHeard(summary.display);
+        setHeard(summary.display);
+        scheduleTranscriptWatchdog(summary.display);
 
         const answer = getSpeechAnswer(summary, currentNum, processing, phase);
         if (answer !== null) {
@@ -733,6 +756,7 @@ function startMic() {
 function stopMic() {
   shouldListen = false;
   clearPendingCountingAnswer();
+  clearTranscriptWatchdog();
   if (recognition) {
     try { recognition.abort(); } catch(e) {}
     recognition = null;
