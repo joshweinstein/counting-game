@@ -187,20 +187,6 @@
     animation: bounceIn 0.4s ease;
   }
 
-  .wrong-hint {
-    position: absolute;
-    bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 22px;
-    color: #FF7043;
-    background: rgba(255,255,255,0.9);
-    padding: 8px 24px;
-    border-radius: 20px;
-    animation: bounceIn 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  }
-
   .mic-indicator {
     display: flex;
     align-items: center;
@@ -570,10 +556,6 @@ function showCorrectOverlay(isStreak) {
 function showWrongOverlay() {
   const arena = document.getElementById('arena');
   arena.classList.add('shaking');
-  const hint = document.createElement('div');
-  hint.className = 'wrong-hint fredoka';
-  hint.textContent = randItem(GENTLE_HINTS);
-  arena.appendChild(hint);
   setTimeout(() => arena.classList.remove('shaking'), 500);
 }
 
@@ -670,6 +652,7 @@ function handleAnswer(answer) {
     srSystem[currentNum].lastSeen = round;
     phase = 'wrong';
     showWrongOverlay();
+    setHeard(randItem(GENTLE_HINTS));
     updateScoreBar();
     updateSRDots();
 
